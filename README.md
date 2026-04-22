@@ -12,11 +12,11 @@ Data is obtained from WRDS Compustat, accessed on 23 April 2026. We exclude fina
 - `02_data_cleaning.py`: Script to clean and process raw data
 - `03_run_analysis.py`: Script to run panel regression analysis
 - `04_generate_plots.py`: Script to generate visualization charts
-- `analysis_workflow.ipynb`: Full analysis workflow notebook
-- `SRC/app.py`: Streamlit interactive app code
+- `acc102 finally.ipynb`: Full analysis workflow notebook
+- `src/app.py`: Streamlit interactive app code
 
 ## How to Run Locally
 1. Install dependencies:
 ```bash
 pip install -r requirements.txt
-streamlit run SRC/app.py
+streamlit run src/app.py
