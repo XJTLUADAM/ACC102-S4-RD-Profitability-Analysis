@@ -1,115 +1,139 @@
+# R&D Investment and Corporate Profitability Analysis
+# ACC102 Mini Assignment - Track 4: Interactive Data Analysis Tool
 import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from linearmodels import PanelOLS
-from statsmodels.tools.tools import add_constant
 
-# 页面设置
-st.set_page_config(page_title="R&D & ROA Dashboard", layout="wide")
-plt.style.use('seaborn-v0_8')
+# -------------------------- 环境适配（避免Matplotlib报错）--------------------------
+plt.rcParams['axes.unicode_minus'] = False
+plt.switch_backend('Agg')
 
-# --------------------------
-# 1. 加载数据
-# --------------------------
-@st.cache_data
-def load_data():
-    df = pd.read_csv("data/processed_data.csv")
-    return df
+# -------------------------- 页面基础配置 --------------------------
+st.set_page_config(
+    page_title="R&D & Profitability Analysis | ACC102",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-df = load_data()
+# -------------------------- 侧边栏 --------------------------
+with st.sidebar:
+    st.title("📌 Menu")
+    menu = st.radio(
+        "Go to",
+        ["Project Overview", "Data Overview", "Descriptive Statistics", "Correlation Analysis", "Regression Results", "Visualization Charts"]
+    )
+    st.markdown("---")
+    st.markdown("**ACC102 Mini Assignment**")
+    st.markdown("Track 4 • Streamlit Interactive Tool")
+    st.markdown("Topic: R&D Intensity vs Firm ROA")
 
-# --------------------------
-# 👈 左边加时间筛选（你要的调时间功能）
-# --------------------------
-min_year = int(df['fyear'].min())
-max_year = int(df['fyear'].max())
+# -------------------------- 1. 项目介绍（作业要求：Problem Definition）--------------------------
+if menu == "Project Overview":
+    st.title("📈 R&D Investment and Corporate Profitability Analysis")
+    st.subheader("ACC102 - Track 4: Interactive Data Analysis Tool")
+    st.markdown("""
+    ### Analytical Purpose
+    This project explores the relationship between **R&D intensity** and corporate profitability (ROA) 
+    using U.S. public firm data from 2018 to 2023.
 
-st.sidebar.header("⚙️ Filter")
-selected_years = st.sidebar.slider("Select Year Range", min_year, max_year, (min_year, max_year))
+    ### Research Questions
+    1. What is the impact of lagged R&D intensity on firm ROA?
+    2. How do firm size and leverage affect profitability?
+    3. What are the trends of R&D investment and corporate performance over time?
 
-# 按筛选后的时间过滤数据
-df_filtered = df[(df['fyear'] >= selected_years[0]) & (df['fyear'] <= selected_years[1])]
+    ### Data Source
+    - WRDS Compustat Fundamental Annual (2018–2023)
+    - U.S. public firms, excluding financial & utility industries
+    """)
+    st.success("✅ This interactive tool supports result viewing & analysis presentation.")
 
-# --------------------------
-# 页面标签
-# --------------------------
-tab1, tab2, tab3, tab4 = st.tabs([
-    "📊 Data Overview", 
-    "📈 Descriptive Statistics", 
-    "🔍 Correlation Analysis", 
-    "📉 Regression & Results"
-])
-
-# --------------------------
-# Tab1 数据概览
-# --------------------------
-with tab1:
-    st.header("Data Overview (Filtered)")
-    st.dataframe(df_filtered.head(10), use_container_width=True)
+# -------------------------- 2. 数据概览 --------------------------
+elif menu == "Data Overview":
+    st.title("📋 Data Overview")
+    @st.cache_data
+    def load_data():
+        df = pd.read_csv("data/processed_data.csv")
+        return df
+    df = load_data()
 
     col1, col2, col3 = st.columns(3)
-    col1.metric("Observations", len(df_filtered))
-    col2.metric("Firms", df_filtered['gvkey'].nunique())
-    col3.metric("Selected Years", f"{selected_years[0]}–{selected_years[1]}")
+    col1.metric("Total Observations", len(df))
+    col2.metric("Unique Firms", df['gvkey'].nunique())
+    col3.metric("Year Range", f"{df['fyear'].min()}–{df['fyear'].max()}")
 
-    st.divider()
-    st.subheader("Yearly Trend (R&D & ROA)")
-    st.image("output/03_yearly_trend.png", use_column_width=True)
+    st.markdown("### Sample Data")
+    st.dataframe(df.head(10), use_container_width=True)
 
-# --------------------------
-# Tab2 描述统计
-# --------------------------
-with tab2:
-    st.header("Descriptive Statistics")
-    desc = pd.read_csv("output/descriptive_statistics.csv", index_col=0)
-    st.dataframe(desc, use_container_width=True)
+    st.markdown("### Key Variables")
+    st.code("""
+    roa: Return on Assets (net income / assets)
+    rd_intensity: R&D / Assets
+    rd_intensity_lag1: Lagged R&D intensity
+    firm_size: Log(Total Assets)
+    leverage: (Short-term + Long-term debt) / Assets
+    """)
 
-    st.divider()
-    c1, c2 = st.columns(2)
-    with c1:
-        st.image("output/05_firm_size_distribution.png", use_column_width=True)
-    with c2:
-        st.image("output/01_rd_quintile_roa.png", use_column_width=True)
+# -------------------------- 3. 描述性统计 --------------------------
+elif menu == "Descriptive Statistics":
+    st.title("📊 Descriptive Statistics")
+    df = pd.read_csv("data/processed_data.csv")
+    desc_vars = ["roa", "rd_intensity", "rd_intensity_lag1", "firm_size", "leverage"]
+    desc_table = df[desc_vars].describe().round(4)
+    st.dataframe(desc_table, use_container_width=True)
 
-# --------------------------
-# Tab3 相关性
-# --------------------------
-with tab3:
-    st.header("Correlation Analysis")
-    st.image("output/02_correlation_heatmap.png", use_column_width=True)
+# -------------------------- 4. 相关性分析 --------------------------
+elif menu == "Correlation Analysis":
+    st.title("🔗 Correlation Analysis")
+    df = pd.read_csv("data/processed_data.csv")
+    corr_vars = ["roa", "rd_intensity_lag1", "firm_size", "leverage"]
+    corr_matrix = df[corr_vars].corr().round(4)
 
-    st.divider()
-    c1, c2 = st.columns(2)
-    with c1:
-        st.image("output/04_rd_roa_scatter.png", use_column_width=True)
-    with c2:
-        st.image("output/06_leverage_roa.png", use_column_width=True)
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("### Correlation Matrix")
+        st.dataframe(corr_matrix, use_container_width=True)
+    with col2:
+        st.markdown("### Heatmap")
+        fig, ax = plt.subplots(figsize=(5, 4))
+        sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", fmt=".2f", square=True, ax=ax)
+        st.pyplot(fig)
 
-# --------------------------
-# Tab4 回归结果
-# --------------------------
-with tab4:
-    st.header("Panel Regression (Two-Way Fixed Effects)")
-    st.write("Dependent Variable: ROA")
-
+# -------------------------- 5. 回归结果 --------------------------
+elif menu == "Regression Results":
+    st.title("📉 Panel Regression Results")
     try:
         with open("output/regression_results.txt", "r", encoding="utf-8") as f:
-            st.code(f.read(), language="text")
+            reg_result = f.read()
+        st.text(reg_result)
     except:
-        df_reg = df_filtered.dropna(subset=["roa", "rd_intensity_lag1", "firm_size", "leverage"])
-        model = PanelOLS.from_formula(
-            "roa ~ 1 + rd_intensity_lag1 + firm_size + leverage + EntityEffects + TimeEffects",
-            data=df_reg.set_index(["gvkey", "fyear"])
-        )
-        res = model.fit(cov_type="clustered", cluster_entity=True, check_rank=False)
-        st.write(res.summary.tables[1].as_html(), unsafe_allow_html=True)
+        st.error("Please run 03_analysis.py first to generate regression results.")
 
-    st.divider()
-    st.markdown("""
-    **Key Findings**  
-    1. R&D intensity has a significant negative short-term effect on ROA.  
-    2. Larger firms have higher profitability.  
-    3. Higher leverage reduces firm profitability.
-    """)
+# -------------------------- 6. 可视化图表 --------------------------
+elif menu == "Visualization Charts":
+    st.title("📊 Visualization Charts")
+    chart_info = [
+        ("output/01_rd_quintile_roa.png", "R&D Quintile vs Average ROA"),
+        ("output/02_correlation_heatmap.png", "Correlation Heatmap"),
+        ("output/03_yearly_trend.png", "Yearly Trend: R&D & ROA"),
+        ("output/04_rd_roa_scatter.png", "R&D Intensity vs ROA Fitting"),
+        ("output/05_firm_size_distribution.png", "Firm Size Distribution"),
+        ("output/06_leverage_roa.png", "Leverage Quartile vs ROA")
+    ]
+
+    for i in range(0, 6, 3):
+        row = st.columns(3)
+        for j in range(3):
+            idx = i + j
+            if idx < 6:
+                with row[j]:
+                    st.markdown(f"#### {chart_info[idx][1]}")
+                    try:
+                        st.image(chart_info[idx][0], use_column_width=True)
+                    except:
+                        st.warning("Chart missing: run 04_visualization.py")
+
+st.markdown("---")
+st.caption("© ACC102 2025-26 S2 • Track 4 Interactive Data Tool")
