@@ -1,6 +1,0 @@
-,roa,rd_intensity,rd_intensity_lag1,firm_size,leverage
-roa,1.0,-0.4682,-0.2958,0.3196,-0.3789
-rd_intensity,-0.4682,1.0,0.6279,-0.32,0.1235
-rd_intensity_lag1,-0.2958,0.6279,1.0,-0.3255,0.1328
-firm_size,0.3196,-0.32,-0.3255,1.0,-0.1594
-leverage,-0.3789,0.1235,0.1328,-0.1594,1.0
